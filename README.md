@@ -46,6 +46,7 @@
     │       └── inbound_webhook.py  # 📥 인바운드 웹훅
     ├── ⚡ core/              # 핵심 설정
     │   ├── config.py         # 환경 설정
+    │   ├── dependencies.py   # FastAPI DI 헬퍼
     │   └── logging.py        # 로그 설정
     ├── 📋 models/            # 데이터 모델
     │   ├── tool_models.py    # 도구 모델
@@ -112,6 +113,14 @@ CALL_WEBHOOK_HANDLERS__CUSTOM_URL_ENABLED=true
 CALL_WEBHOOK_HANDLERS__DATABASE_ENABLED=false
 ```
 
+#### ⚙️ 구성 옵션 이해하기
+
+- `environment`: `local`, `development`, `staging`, `production` 중 하나를 선택해 런타임 환경을 명시합니다. (기본값: `local`)
+- `CALL_WEBHOOK_HANDLERS__*`: 콜 웹훅을 어느 채널로 전달할지 토글합니다. 값을 `false`로 설정하면 해당 핸들러가 등록되지 않습니다.
+  - Make.com과 커스텀 URL 핸들러는 URL이 비어 있으면 자동으로 비활성화됩니다.
+  - Database 핸들러는 `DATABASE_URL`이 필요합니다.
+- 추가 환경 변수는 `.env`에 정의하면 FastAPI 시작 시 자동으로 로드됩니다. 더 많은 설정 키와 동작은 `app/core/config.py`에서 확인할 수 있습니다.
+
 ### 4️⃣ 서버 실행
 
 ```bash
@@ -145,24 +154,46 @@ poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ### 📞 새로운 웹훅 핸들러 추가
 
-예를 들어, 통화 종료 시 Slack으로 알림을 보내고 싶다면:
+이 템플릿은 설정 기반으로 핸들러를 초기화합니다. 새로운 통합을 만들고 싶다면 다음 순서를 따르면 됩니다.
 
-**1단계**: `app/services/handlers/slack_handler.py` 파일 생성
+**1단계**: `app/services/handlers/` 아래에 새 핸들러 클래스를 추가합니다.
 ```python
+from typing import Literal, Union
+
+from app.core.logging import get_logger
+from app.models.webhook_models import CallStartedPayload, CallEndedPayload
 from .base_handler import BaseCallEventHandler
 
-class SlackHandler(BaseCallEventHandler):
-    async def handle(self, event_data: dict):
-        # Slack 알림 로직 구현
-        print(f"📨 Slack 알림 발송: {event_data}")
+logger = get_logger(__name__)
+
+
+class MyHandler(BaseCallEventHandler):
+    async def handle(
+        self,
+        event_type: Literal["call_started", "call_ended"],
+        payload: Union[CallStartedPayload, CallEndedPayload],
+    ) -> None:
+        logger.info("커스텀 핸들러 실행", extra={"event": event_type, "call_id": payload.call.call_id})
+        # TODO: 실제 처리 로직 구현 (예: 외부 API 호출, DB 저장 등)
 ```
 
-**2단계**: `app/services/call_webhook_service.py`에 핸들러 추가
+**2단계**: `CallWebhookHandlerSettings` 모델과 `_build_default_handlers` 메서드를 확장하여 새 핸들러에 대한 토글과 초기화 로직을 등록합니다.
 ```python
-from .handlers.slack_handler import SlackHandler
+# app/core/config.py
+class CallWebhookHandlerSettings(BaseModel):
+    ...
+    my_handler_enabled: bool = Field(default=False)
 
-# 기존 코드에 추가
-self.handlers.append(SlackHandler())
+# app/services/call_webhook_service.py
+from .handlers.my_handler import MyHandler
+
+if handler_settings.my_handler_enabled:
+    yield MyHandler()
+```
+
+**3단계**: `.env`에 토글 값을 추가하거나 기본값을 수정합니다.
+```env
+CALL_WEBHOOK_HANDLERS__MY_HANDLER_ENABLED=true
 ```
 
 ### 🔧 새로운 AI 도구 추가
