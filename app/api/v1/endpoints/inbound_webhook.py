@@ -1,11 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from app.core.dependencies import get_inbound_webhook_service
+from app.core.logging import get_logger
 from app.models.webhook_models import InboundWebhookPayload, InboundWebhookResponse
 from app.services.inbound_webhook_service import InboundWebhookService
-from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
-inbound_webhook_service = InboundWebhookService()  # 서비스 인스턴스 생성
 
 
 # 인바운드 콜 웹훅을 수신하는 엔드포인트
@@ -18,6 +19,9 @@ inbound_webhook_service = InboundWebhookService()  # 서비스 인스턴스 생�
 )
 async def handle_inbound_webhook(
     webhook_data: InboundWebhookPayload,  # Pydantic 모델을 사용하여 자동 유효성 검사 및 파싱
+    inbound_webhook_service: InboundWebhookService = Depends(
+        get_inbound_webhook_service
+    ),
 ) -> InboundWebhookResponse:
     """
     Vox.ai로부터 인바운드 콜 웹훅 이벤트를 수신합니다.

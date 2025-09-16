@@ -1,3 +1,6 @@
+from typing import Optional
+
+from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
 from app.models.tool_models import AgentToolRequestPayload, AgentToolResponsePayload
 
@@ -6,6 +9,9 @@ logger = get_logger(__name__)
 
 # 에이전트 도구 호출을 처리하는 서비스
 class AgentToolService:
+
+    def __init__(self, settings: Optional[Settings] = None):
+        self._settings = settings or get_settings()
 
     async def process_tool_call(
         self, tool_name: str, payload: AgentToolRequestPayload

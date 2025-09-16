@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Path, HTTPException, Body
+from fastapi import APIRouter, Body, Depends, HTTPException, Path
+
+from app.core.dependencies import get_agent_tool_service
+from app.core.logging import get_logger
 from app.models.tool_models import AgentToolRequestPayload, AgentToolResponsePayload
 from app.services.agent_tool_service import AgentToolService
-from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
-agent_tool_service = AgentToolService()  # 서비스 인스턴스 생성
 
 
 # 에이전트 도구 호출을 수신하는 동적 엔드포인트
@@ -21,6 +22,7 @@ async def handle_agent_tool(
     payload: AgentToolRequestPayload = Body(
         ..., description="도구 호출에 필요한 파라미터 (JSON 객체)"
     ),
+    agent_tool_service: AgentToolService = Depends(get_agent_tool_service),
 ) -> AgentToolResponsePayload:
     """
     Vox.ai 에이전트로부터 특정 API 도구 호출을 수신하고 처리합니다.

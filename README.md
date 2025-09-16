@@ -105,6 +105,11 @@ CUSTOM_SERVER_WEBHOOK_URL="https://your-server.com/webhook"
 
 # 💾 데이터베이스 연결 (선택사항)
 DATABASE_URL="postgresql://user:password@host:port/dbname"
+
+# 🔁 웹훅 핸들러 토글 (선택사항)
+CALL_WEBHOOK_HANDLERS__MAKE_COM_ENABLED=true
+CALL_WEBHOOK_HANDLERS__CUSTOM_URL_ENABLED=true
+CALL_WEBHOOK_HANDLERS__DATABASE_ENABLED=false
 ```
 
 ### 4️⃣ 서버 실행

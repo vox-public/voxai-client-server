@@ -1,4 +1,6 @@
-from typing import Dict, Any
+from typing import Any, Dict, Optional
+
+from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
 from app.models.webhook_models import (
     InboundWebhookPayload,
@@ -11,6 +13,9 @@ logger = get_logger(__name__)
 
 # 인바운드 콜 웹훅을 처리하는 서비스
 class InboundWebhookService:
+
+    def __init__(self, settings: Optional[Settings] = None):
+        self._settings = settings or get_settings()
 
     async def process_inbound_call(
         self, payload: InboundWebhookPayload

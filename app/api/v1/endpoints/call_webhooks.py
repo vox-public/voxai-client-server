@@ -1,12 +1,14 @@
-from fastapi import APIRouter, HTTPException
-from typing import Dict, Any
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.core.dependencies import get_call_webhook_service
+from app.core.logging import get_logger
 from app.models.webhook_models import CallWebhookPayload
 from app.services.call_webhook_service import CallWebhookService
-from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
-call_webhook_service = CallWebhookService()  # 서비스 인스턴스 생성
 
 
 # 통화 데이터 웹훅 이벤트를 수신하는 엔드포인트
@@ -18,6 +20,7 @@ call_webhook_service = CallWebhookService()  # 서비스 인스턴스 생성
 )
 async def handle_call_webhook(
     webhook_data: CallWebhookPayload,  # Pydantic 모델을 사용하여 자동 유효성 검사 및 파싱
+    call_webhook_service: CallWebhookService = Depends(get_call_webhook_service),
 ) -> Dict[str, Any]:
     """
     Vox.ai로부터 통화 시작(`call_started`) 또는 통화 종료(`call_ended`) 이벤트를 수신합니다.

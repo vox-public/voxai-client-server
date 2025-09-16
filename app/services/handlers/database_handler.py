@@ -1,7 +1,8 @@
-from typing import Union, Literal
-from app.models.webhook_models import CallStartedPayload, CallEndedPayload
-from app.core.config import settings
+from typing import Literal, Optional, Union
+
+from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
+from app.models.webhook_models import CallEndedPayload, CallStartedPayload
 from .base_handler import BaseCallEventHandler
 
 logger = get_logger(__name__)
@@ -9,6 +10,9 @@ logger = get_logger(__name__)
 
 # 데이터베이스에 통화 데이터를 저장하는 핸들러
 class DatabaseHandler(BaseCallEventHandler):
+
+    def __init__(self, settings: Optional[Settings] = None):
+        self._settings = settings or get_settings()
 
     async def handle(
         self,
@@ -19,7 +23,7 @@ class DatabaseHandler(BaseCallEventHandler):
         콜 데이터 웹훅 페이로드를 데이터베이스에 저장합니다.
         이 함수는 스켈레톤 구현이며, 실제 데이터베이스 로직으로 확장해야 합니다.
         """
-        if not settings.database_url:
+        if not self._settings.database_url:
             logger.warning("데이터베이스 URL이 설정되지 않아 DB 저장을 스킵합니다.")
             return
 

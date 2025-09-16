@@ -1,9 +1,11 @@
-from typing import Union, Literal
 from datetime import datetime, timezone
+from typing import Literal, Optional, Union
+
 import httpx
-from app.models.webhook_models import CallStartedPayload, CallEndedPayload
-from app.core.config import settings
+
+from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
+from app.models.webhook_models import CallEndedPayload, CallStartedPayload
 from .base_handler import BaseCallEventHandler
 
 logger = get_logger(__name__)
@@ -11,6 +13,9 @@ logger = get_logger(__name__)
 
 # Make.com 웹훅으로 데이터를 전송하는 핸들러
 class MakeComHandler(BaseCallEventHandler):
+
+    def __init__(self, settings: Optional[Settings] = None):
+        self._settings = settings or get_settings()
 
     async def handle(
         self,
@@ -21,7 +26,7 @@ class MakeComHandler(BaseCallEventHandler):
         콜 데이터 웹훅 페이로드를 Make.com 웹훅 URL로 전송합니다.
         설정된 MAKE_COM_WEBHOOK_URL이 없으면 아무것도 하지 않습니다.
         """
-        webhook_url = settings.make_com_webhook_url
+        webhook_url = self._settings.make_com_webhook_url
         if not webhook_url:
             logger.warning("Make.com 웹훅 URL이 설정되지 않아 스킵합니다.")
             return
@@ -37,18 +42,16 @@ class MakeComHandler(BaseCallEventHandler):
         }
 
         if event_type == "call_started" and isinstance(payload, CallStartedPayload):
-            # send_payload.update(
-            #     {
-            #         "call_id": str(payload.call.call_id),
-            #         "agent_id": (
-            #             str(payload.call.agent_id) if payload.call.agent_id else None
-            #         ),
-            #         "call_from": payload.call.call_from,
-            #         "call_to": payload.call.call_to,
-            #         "dynamic_variables": payload.call.dynamic_variables,
-            #     }
-            # )
-            return
+            call = payload.call
+            send_payload.update(
+                {
+                    "call_id": str(call.call_id),
+                    "agent_id": str(call.agent_id) if call.agent_id else None,
+                    "call_from": call.call_from,
+                    "call_to": call.call_to,
+                    "dynamic_variables": call.dynamic_variables,
+                }
+            )
 
         elif event_type == "call_ended" and isinstance(payload, CallEndedPayload):
             agent_id = payload.call.agent_id
@@ -84,6 +87,10 @@ class MakeComHandler(BaseCallEventHandler):
                     "processed_at": datetime.now(timezone.utc).isoformat(),
                     "agent_id": str(agent_id),
                 }
+        else:
+            logger.warning("지원하지 않는 이벤트 유형 %s로 Make.com 핸들러를 호출했습니다.", event_type)
+            return
+
         # --- Make.com 전용 페이로드 생성 로직 (끝) ---
 
         logger.info(f"{event_type} 이벤트를 Make.com 웹훅으로 전송합니다...")
