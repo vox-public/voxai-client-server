@@ -85,27 +85,30 @@ class CallEndedDetails(CallDetailsBase):
     call_cost: Optional[CallCost] = Field(None, description="통화 비용 정보")
     call_analysis: Optional[CallAnalysis] = Field(None, description="통화 분석 결과")
 
+class MidCallDetails(BaseModel):
+    agent_id: str = Field(..., description="에이전트 고유 식별자")
+    call_id: str = Field(..., description="통화 고유 식별자")
+    timestamp: int = Field(..., description="통화 시간 (Epoch milliseconds)")
+    event_type: str = Field(..., description="이벤트 유형")
+    event_data: Dict[str, Any] = Field(..., description="이벤트 데이터")
+
 
 class CallEndedPayload(BaseModel):
     event: Literal["call_ended"] = Field(..., description="이벤트 유형: 통화 종료")
     call: CallEndedDetails = Field(..., description="통화 종료 상세 정보")
 
+class MidCallPayload(BaseModel):
+    event: Literal["mid_call"] = Field(..., description="이벤트 유형: 통화 중")
+    mid_call: MidCallDetails = Field(..., description="통화 중 상세 정보")
 
 # --- 통화 데이터 웹훅 엔드포인트를 위한 Union 타입 ---
-CallWebhookPayload = Union[CallStartedPayload, CallEndedPayload]
+CallWebhookPayload = Union[CallStartedPayload, CallEndedPayload, MidCallPayload]
 
 
 # --- 인바운드 콜 웹훅 페이로드 ---
-class InboundCallDetailsRequest(BaseModel):
+class InboundWebhookPayload(BaseModel):
     from_number: Optional[str] = Field(None, description="인바운드 콜 발신 번호")
     to_number: Optional[str] = Field(None, description="인바운드 콜 수신 번호")
-
-
-class InboundWebhookPayload(BaseModel):
-    event: Literal["call_inbound"] = Field(..., description="이벤트 유형: 인바운드 콜")
-    call_inbound: InboundCallDetailsRequest = Field(
-        ..., description="인바운드 콜 요청 상세 정보"
-    )
 
 
 class InboundCallDetailsResponse(BaseModel):

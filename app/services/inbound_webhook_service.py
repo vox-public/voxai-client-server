@@ -26,20 +26,22 @@ class InboundWebhookService:
         """
         logger.info(f"인바운드 콜 웹훅 처리 시작, 페이로드: {payload}")
 
-        from_number = payload.call_inbound.from_number
-        to_number = payload.call_inbound.to_number
+        from_number = payload.from_number
+        to_number = payload.to_number
 
         dynamic_variables: Dict[str, Any] = {}
         metadata: Dict[str, Any] = {}
 
         # --- 예시 로직: 발신 번호에 따라 동적 변수 설정 ---
-        if from_number == "821012345678":
+        if from_number == "01012345678":
             dynamic_variables["user_name"] = "김철수"
+            dynamic_variables["user_id"] = 1
             dynamic_variables["product_name"] = "아이폰 16 프로"
             metadata["user_id"] = "user_kim_chul_su_123"
             logger.info(f"{from_number}로부터 김철수님을 식별했습니다.")
-        elif from_number == "821087654321":
+        elif from_number == "01007654321":
             dynamic_variables["user_name"] = "손예진"
+            dynamic_variables["user_id"] = 2
             dynamic_variables["last_order_date"] = "2024-07-01"
             metadata["user_id"] = "user_son_ye_jin_456"
             logger.info(f"{from_number}로부터 손예진님을 식별했습니다.")
